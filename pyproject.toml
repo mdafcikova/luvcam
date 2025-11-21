@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+build-backend = 'setuptools.build_meta'
+
+[tool.setuptools_scm]
+write_to = "luvcam/_version.py"
+
+[project]
+name = "luvcam"
+authors = [
+  { name="Emily Hu", email="emilyhu21030@gmail.com" },
+]
+dependencies = [
+  "numpy",
+  "ephem",
+  "scipy"
+]
+description = "Operations planning for LUVCam1 and LUVCam2"
+dynamic = ["version"]
+readme = "README.rst"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+
+[project.optional-dependencies]
+docs = [
+    "sphinx",
+    "sphinx-automodapi",
+    "numpydoc",
+]
+
+[project.urls]
+Homepage = "https://github.com/pypa/sampleproject"

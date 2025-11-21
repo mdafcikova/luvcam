@@ -1,0 +1,8 @@
+numpy
+ephem
+scipy
+
+[docs]
+sphinx
+sphinx-automodapi
+numpydoc
