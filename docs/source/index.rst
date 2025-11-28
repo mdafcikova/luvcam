@@ -3,15 +3,25 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-luvcam documentation
-====================
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
+********
+luvcam
+********
 
+Welcome to the luvcam documentation!  luvcam is a package that contains  It provides:
+- The ability to read from and write to an ordered sequence of files as if it was a single file.
+
+
+Overview
+========
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+
+.. automodapi:: luvcam.visibility_checker
+   :no-inheritance-diagram:
+
+.. automodapi:: luvcam.tle
+   :no-inheritance-diagram:
 
