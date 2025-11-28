@@ -9,21 +9,11 @@ import ephem
 import ephem.stars
 from scipy.spatial.transform import Rotation as R
 import numpy as np
+from tle import _checksum
 
 # ---------------------------------------------------------------------------
 #  Internal helpers
 # ---------------------------------------------------------------------------
-
-def _checksum(line: str) -> int:
-    """Return NORAD checksum (mod‑10) for first 68 chars of *line*."""
-    s = 0
-    for ch in line[:68]:
-        if ch.isdigit():
-            s += int(ch)
-        elif ch == "-":
-            s += 1
-    return s % 10
-
 
 def _clean_tle_line(line: str) -> str:
     """Strip extraneous chars and repair checksum to 69‑char TLE."""
