@@ -9,7 +9,7 @@ import ephem
 import ephem.stars
 from scipy.spatial.transform import Rotation as R
 import numpy as np
-from tle import _checksum
+from .tle import _checksum
 
 # ---------------------------------------------------------------------------
 #  Internal helpers
