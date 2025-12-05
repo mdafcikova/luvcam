@@ -5,7 +5,7 @@ Using LUVCam
 **************
 
 To find the set of visible stars in the field of LUVCam, one will first need to retrieve the TLE of LUVCam's 
-current position. TLUVCam's TLE is provided by Celestrak: https://celestrak.org/NORAD/elements/gp.php?CATNR=60237.
+current position. LUVCam's TLE is provided by Celestrak: https://celestrak.org/NORAD/elements/gp.php?CATNR=60237.
 ::
 
     >>> import luvcam

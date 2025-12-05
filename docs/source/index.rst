@@ -13,22 +13,17 @@ Welcome to the LUVCam documentation! LUVCam is a package for planning science pa
 - The ability to read from and write to an ordered sequence of files as if it was a single file.
 
 
-.. _overview_toc:
+.. _usage_toc:
 Overview
 ========
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-.. automodapi:: luvcam.visibility_checker
-   :no-inheritance-diagram:
-
-.. _usage_toc:
-Usage
-========
-
 .. toctree::
    :maxdepth: 2
 
    usage
+
+
+Reference
+========
+.. automodapi:: luvcam.visibility_checker
+   :no-inheritance-diagram:
+
