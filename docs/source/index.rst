@@ -12,6 +12,10 @@ Welcome to the LUVCam documentation! LUVCam is a package for planning science pa
 <https://rhodesmill.org/pyephem/>`_.
 - The ability to read from and write to an ordered sequence of files as if it was a single file.
 
+Installation
+========
+To install the LUVCam package, enter into the command line::
+   pip install git+https://github.com/emily21030/luvcam.git
 
 .. _usage_toc:
 Overview

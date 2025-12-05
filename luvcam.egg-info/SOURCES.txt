@@ -39,6 +39,7 @@ docs/build/html/api/luvcam.visibility_checker.find_visible_stars.html
 docs/build/html/api/luvcam.visibility_checker.ra_dec_to_quaternion.html
 docs/source/conf.py
 docs/source/index.rst
+docs/source/usage.rst
 docs/source/api/luvcam.visibility_checker.find_visible_stars.rst
 docs/source/api/luvcam.visibility_checker.ra_dec_to_quaternion.rst
 luvcam/__init__.py
