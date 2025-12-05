@@ -1,26 +1,6 @@
 LUVCam: a package for LUVCam1 and 2 operations
 ==========================================
 
-.. .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.1214268.svg
-..    :target: https://doi.org/10.5281/zenodo.1214268
-..    :alt: DOI 10.5281/zenodo.1214268
-
-.. .. image:: http://img.shields.io/badge/powered%20by-AstroPy-orange.svg?style=flat
-..     :target: http://www.astropy.org
-..     :alt: Powered by Astropy
-
-.. .. image:: https://github.com/mhvk/baseband/workflows/CI/badge.svg
-..     :target: https://github.com/mhvk/baseband/actions
-..     :alt: Test Status
-
-.. .. image:: https://codecov.io/gh/mhvk/baseband/branch/master/graph/badge.svg
-..    :target: https://codecov.io/gh/mhvk/baseband
-..    :alt: Coverage Level
-
-.. .. image:: https://readthedocs.org/projects/baseband/badge/?version=latest
-..    :target: https://baseband.readthedocs.io/en/latest/?badge=latest
-..    :alt: Documentation Status
-
 LUVCam is a package for planning science passes on LUVCam1 and 2. It relies on `NumPy <http://www.numpy.org/>`_ and `Ephem
 <https://rhodesmill.org/pyephem/>`_.
 

@@ -5,13 +5,15 @@
 
 
 ********
-luvcam
+LUVCam
 ********
 
-Welcome to the luvcam documentation!  luvcam is a package that contains  It provides:
+Welcome to the LUVCam documentation! LUVCam is a package for planning science passes on LUVCam1 and 2. It relies on `NumPy <http://www.numpy.org/>`_ and `Ephem
+<https://rhodesmill.org/pyephem/>`_.
 - The ability to read from and write to an ordered sequence of files as if it was a single file.
 
 
+.. _overview_toc:
 Overview
 ========
 
@@ -22,6 +24,11 @@ Overview
 .. automodapi:: luvcam.visibility_checker
    :no-inheritance-diagram:
 
-.. automodapi:: luvcam.tle
-   :no-inheritance-diagram:
+.. _usage_toc:
+Usage
+========
 
+.. toctree::
+   :maxdepth: 2
+
+   usage
