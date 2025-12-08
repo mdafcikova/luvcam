@@ -14,7 +14,8 @@ Welcome to the LUVCam documentation! LUVCam is a package for planning science pa
 
 Installation
 ========
-To install the LUVCam package, enter into the command line::
+To install the LUVCam package, enter into the command line:
+::
    pip install git+https://github.com/emily21030/luvcam.git
 
 .. _usage_toc:
