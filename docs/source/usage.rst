@@ -5,7 +5,8 @@ Using LUVCam
 **************
 
 To find the set of visible stars in the field of LUVCam, one will first need to retrieve the TLE of LUVCam's 
-current position. LUVCam's TLE is provided by Celestrak: https://celestrak.org/NORAD/elements/gp.php?CATNR=60237.
+current position. LUVCam's TLE is provided by Celestrak: https://celestrak.org/NORAD/elements/gp.php?CATNR=60237. 
+Each line of the TLE can be entered as the element of a list to be passed into find_visible_stars():
 ::
 
     >>> import luvcam
@@ -29,54 +30,19 @@ current position. LUVCam's TLE is provided by Celestrak: https://celestrak.org/N
     {'name': 'Alshain', 'magnitude': 3.71, 'sun_sep_deg': 80.56, 'limb_clearance_deg': 75.87, 'RA': 299.1444, 'Dec': 6.4732}
     {'name': 'Alcor', 'magnitude': 3.99, 'sun_sep_deg': 72.59, 'limb_clearance_deg': 12.46, 'RA': 201.5594, 'Dec': 54.8517}
 
-For other file formats, a bit more information is needed.  Below, we cover the
-basics of :ref:`inspecting files <using_baseband_inspecting>`, :ref:`reading
-<using_baseband_reading>` from and :ref:`writing <using_baseband_writing>`
-to files, :ref:`converting <using_baseband_converting>` from one format
-to another, and :ref:`diagnosing problems <using_baseband_problems>`.
-We assume that Baseband as well as numpy_ and the
-`astropy.units <https://docs.astropy.org/en/stable/units>`_ module
-have been imported::
 
-    >>> import baseband
-    >>> import numpy as np
-    >>> import astropy.units as u
-
-.. _using_baseband_inspecting:
-
-Inspecting Files
-================
-
-Baseband allows you to quickly determine basic properties of a file, including
-what format it is, using the `baseband.file_info` function. For instance, it
-shows that the sample VDIF file that comes with Baseband is very short (sample
-files can all be found in the `baseband.data` module)::
-
-    >>> import baseband.data
-    >>> baseband.file_info(baseband.data.SAMPLE_VDIF)
-    VDIFStream information:
-    start_time = 2014-06-16T05:56:07.000000000
-    stop_time = 2014-06-16T05:56:07.001250000
-    sample_rate = 32.0 MHz
-    shape = (40000, 8)
-    format = vdif
-    bps = 2
-    complex_data = False
-    verify = fix
-    readable = True
-    <BLANKLINE>
-    checks:  decodable: True
-             continuous: no obvious gaps
-    <BLANKLINE>
-    VDIFFile information:
-    edv = 3
-    number_of_frames = 16
-    thread_ids = [0, 1, 2, 3, 4, 5, 6, 7]
-    number_of_framesets = 2
-    frame_rate = 1600.0 Hz
-    samples_per_frame = 20000
-    sample_shape = (8, 1)
-
-The same function will also tell you when more information is needed. For
-instance, for Mark 5B files one needs the number of channels used, as well as
-(roughly) when the data were taken::
+Another small function is provided for converting targets to quaternion coordinates, ra_dec_to_quaternion():
+::
+    >>> import luvcam
+    >>> from luvcam.vis import ra_dec_to_quaternion
+    >>> ra_deg = 40.31
+    >>> dec_deg = 19.43
+    >>> x, y, z, w = ra_dec_to_quaternion(ra_deg, dec_deg)
+    >>> print(x)
+    >>> print(y)
+    >>> print(z)
+    >>> print(w)
+    -0.35216305275061904
+    0.6131730459481766
+    0.695400773377592
+    -0.1281318242508355
