@@ -16,7 +16,7 @@ Installation
 ========
 To install the LUVCam package, enter into the command line:
 ::
-   pip install git+https://github.com/emily21030/luvcam.git
+   >>> pip install git+https://github.com/emily21030/luvcam.git
 
 .. _usage_toc:
 Overview
