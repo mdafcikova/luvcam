@@ -10,7 +10,7 @@ LUVCam
 
 Welcome to the LUVCam documentation! LUVCam is a package for planning science passes on LUVCam1 and 2. It relies on `NumPy <http://www.numpy.org/>`_ and `Ephem
 <https://rhodesmill.org/pyephem/>`_.
-- The ability to read from and write to an ordered sequence of files as if it was a single file.
+
 
 Installation
 ========
