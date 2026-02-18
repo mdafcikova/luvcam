@@ -5,7 +5,7 @@ LUVCam is a package for planning science passes on LUVCam1 and 2. It relies on `
 <https://rhodesmill.org/pyephem/>`_.
 
 For installation and usage instructions, please see the `online documentation
-<https://baseband.readthedocs.io/>`_.
+<https://luvcam.readthedocs.io/en/latest/index.html>`_.
 
 License
 -------
