@@ -4,6 +4,8 @@ MANIFEST.in
 README.rst
 pyproject.toml
 setup.py
+tox.ini
+.github/workflows/ci_workflows.yml
 docs/Makefile
 docs/make.bat
 docs/build/doctrees/environment.pickle
@@ -44,10 +46,12 @@ docs/source/api/luvcam.visibility_checker.find_visible_stars.rst
 docs/source/api/luvcam.visibility_checker.ra_dec_to_quaternion.rst
 luvcam/__init__.py
 luvcam/_version.py
+luvcam/ops.py
 luvcam/vis.py
 luvcam.egg-info/PKG-INFO
 luvcam.egg-info/SOURCES.txt
 luvcam.egg-info/dependency_links.txt
 luvcam.egg-info/requires.txt
 luvcam.egg-info/top_level.txt
+luvcam/tests/test_ops.py
 luvcam/tests/test_vis.py
