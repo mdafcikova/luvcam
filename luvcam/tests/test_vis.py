@@ -1,5 +1,5 @@
 import pytest
-from luvcam.vis import find_visible_stars, ra_dec_to_quaternion
+from luvcam.vis import find_visible_stars, ra_dec_to_quaternion, hms_to_deg, dms_to_deg
 
 def test_sun70():
     TLE = (
@@ -31,3 +31,12 @@ def test_quat():
     assert(y == pytest.approx(0.6131730459481766))
     assert(z == pytest.approx(0.695400773377592))
     assert(w == pytest.approx(-0.1281318242508355))
+
+def test_hms_to_deg():
+    deg = hms_to_deg(10,23,16.1)
+    assert(deg == pytest.approx(155.817075))
+
+def test_dms_to_deg():
+    deg = dms_to_deg(41,9,23.8)
+    assert(deg == pytest.approx(41.1566111))
+

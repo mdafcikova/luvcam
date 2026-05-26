@@ -159,6 +159,46 @@ def find_visible_stars(
 #  Marianna's Code for computing Quaternions
 # ---------------------------------------------------------------------------
 
+def hms_to_deg(h,m,s):
+    """Converts RA in units (hour,min,sec) to degrees. 
+
+    Parameters
+    ----------
+    h : int
+        Hour.
+    m : int
+        Minute.
+    s : float
+        Second.
+
+    Returns
+    -------
+    deg : float
+        Value of input RA in degrees.
+    """
+    deg = (h+m/60+s/3600)*180/12
+    return deg
+
+def dms_to_deg(d,m,s):
+    """Converts Dec in units (deg,arcmin,arcsec) to degrees. 
+
+    Parameters
+    ----------
+    d : int
+        Degree.
+    m : int
+        Arcminute.
+    s : float
+        Arcsecond.
+
+    Returns
+    -------
+    deg : float
+        Value of input Dec in degrees.
+    """
+    deg = (d+m/60+s/3600)
+    return deg
+
 def ra_dec_to_quaternion(ra_deg, dec_deg):
     """Converts RA, Dec in degrees to quaternion (pointing with -X axis)
 

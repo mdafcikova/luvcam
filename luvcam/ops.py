@@ -1,0 +1,469 @@
+from datetime import datetime, timezone
+import re
+from luvcam.vis import ra_dec_to_quaternion, hms_to_deg, dms_to_deg
+
+'''
+notes / todo:
+- calibration img does not need aocs stuff --- create separate function?
+
+- dt_pointing / dt_detumble: add option for dt in minutes or specific time in UTC
+
+- add search for ra/deg for known objects?
+
+- tests
+
+- GRBBeta will/will not be illuminated by the Sun.
+
+- GRBBeta lon,lat
+
+- always put at least 1 sec between two mcr items
+
+- create commands for data download (luvcam img + temp measurement)
+
+- create commands for deleting luvcam + temp files (once downloaded!)
+
+- documentation
+
+'''
+
+def _string_to_hex(s):
+    '''
+    Takes a string (number will be converted to string) and returns it decoded in the format for "data" part in mcr commands. 
+    Format only relevant for luvcam commands (cli 1 "luvcam ...").
+    '''
+    decoded_string = ""
+    for ch in str(s):
+        decoded_string += hex(ord(ch))[2:].upper()
+        decoded_string += " "
+    decoded_string = re.sub(r'\s+', ' ', decoded_string).strip() # remove trailing and internal spaces
+    return decoded_string
+
+def _get_luvcam_expose_data(img_filename,img_exp,img_x_offset,img_y_offset,img_xs,img_ys,img_gain=0):
+    '''
+    Creates "data" part for mcr command that takes luvcam image.
+    Format:
+    # "luvcam expose <filename>.raw <exp_ms> 0 <x> <y> <xs> <ys>"
+    '''
+    space = " 20 "
+    luvcam_expose = "6C 75 76 63 61 6D 20 65 78 70 6F 73 65"
+
+    img_filename = img_filename.strip()
+    if ".raw" in img_filename:
+        filename = _string_to_hex(img_filename)
+    else:
+        filename = _string_to_hex(img_filename)
+        filename += ' '
+        filename += _string_to_hex(".raw")
+
+    exp = _string_to_hex(img_exp)
+    gain = _string_to_hex(img_gain)
+
+    x_offset = _string_to_hex(img_x_offset)
+    y_offset = _string_to_hex(img_y_offset)
+
+    xs = _string_to_hex(img_xs)
+    ys = _string_to_hex(img_ys)
+
+    data = luvcam_expose + space + filename + space + exp + space + gain + space + x_offset + space + y_offset + space + xs + space + ys + " 00"
+    data = re.sub(r'\s+', ' ', data).strip()
+    return data
+
+
+def create_op_plan_science_img(img_time_utc,target_ra,target_dec,
+                               img_filename,img_exp,
+                               dt_pointing=20,target_name=None,
+                               output_fn='op_plan'):
+    '''
+    This function creates an operation plan for AOCS+LUVCam operation.
+
+    required arguments:
+    - img_time_utc: UTC time when the image should be taken, e.g. 2026-04-22 20:35:00 
+    - target_ra: right ascension of the target as a float in degrees or tuple in format (hour,minute,second)
+    - target_dec: declination of the target as a float in degrees or tuple in format (degree,arcminute,arcsecond)
+    - img_filename: name of the luvcam image, e.g. 26d22a
+    - img_exp: required exposure in miliseconds, e.g. 1000 (= 1s)
+    - img_type: "science" or "calibration"
+            "science": 1000x1000px image centered to the illuminated part of CMOS
+            "calibration": 512x512px image from a specific part of the non-illuminated part of CMOS
+            For images in SAA use "calibration".
+
+    optional arguments:
+    - dt_pointing: how many minutes before the image is taken should pointing begin (default: 20 min)
+    - target_name: this is just for your information and clarity, e.g. Pleiades
+    - output_fn: name of the output txt file, by default "op_plan.txt"
+
+    output:
+    - .txt file with the operation plan to be executed
+    '''
+
+    # define slot number
+    slot = 4 
+    # define source node for mcr commands
+    source = 28
+
+    # convert ra,dec if needed
+    if (type(target_ra) == tuple) and (len(target_ra)==3):
+        ra_deg = hms_to_deg(target_ra[0],target_ra[1],target_ra[2])
+    elif (type(target_ra) == float):
+        ra_deg = target_ra
+    else:
+        raise ValueError("Format of target RA is incorrect. Needs to be float in degrees or tuple in format (hour,minute,second).")
+
+    if (type(target_dec) == tuple) and (len(target_dec)==3):
+        dec_deg = dms_to_deg(target_dec[0],target_dec[1],target_dec[2])
+    elif (type(target_dec) == float):
+        dec_deg = target_dec
+    else:
+        raise ValueError("Format of target Dec is incorrect. Needs to be float in degrees or tuple in format (degree,arcminute,arcsecond).")
+
+    # quaternion components
+    q0,q1,q2,q3 = ra_dec_to_quaternion(ra_deg,dec_deg)
+
+    # define img size and sensor coords
+    img_x_offset=1548
+    img_y_offset=2846
+    img_xs=1000
+    img_ys=1000
+
+    # timestamp of luvcam image and others
+    dt = datetime.strptime(img_time_utc, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+    ts_img = int(dt.timestamp())
+    ts_pointing = int(ts_img-dt_pointing*60)
+
+    ts_detumbling = int(ts_pointing-20*60)
+
+    if ts_img-ts_pointing<0:
+        raise ValueError("Pointing cannot begin after the image is taken!")
+
+    if ts_pointing-ts_detumbling<0:
+        raise ValueError("Pointing cannot begin before detumbling!")
+
+    # create "data" part from mcr command from the input parameters
+    luvcam_expose_data = _get_luvcam_expose_data(img_filename,img_exp,img_x_offset,img_y_offset,img_xs,img_ys)
+
+    # img filename format for drops
+    filename = img_filename.split('.')[0]
+
+    # target name syntax
+    if target_name == None:
+        target_name = "a target"
+
+    op_plan = f"""# This is an operation plan for LUVCam image of {target_name} 
+# at RA = {ra_deg} deg, Dec = {dec_deg} deg at {img_time_utc} UTC
+# with an exposure of {img_exp/1000} seconds.
+# Verify that the target will not be behind the Earth.
+
+# Detumbling will begin at {datetime.fromtimestamp(ts_detumbling,tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}.
+# Pointing will begin at {datetime.fromtimestamp(ts_pointing,tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}, 
+# {dt_pointing} minutes before the image will be taken. Verify that 
+# the satellite will be illuminated by the Sun.
+
+# MAKE SURE THE TIMES ARE LATER THAN THE PASS WHEN YOU EXECUTE THE COMMANDS.
+
+# Below follows a list of commands to be executed (for now manually by an operator).
+# The commands should be executed in this order.
+
+# 1. 
+# Wipe datakeeper (DK) = AOCS data
+# Make sure previous data were downloaded or are not needed.
+dk wipe 10 1
+dk wipe 10 13
+dk wipe 10 41
+dk wipe 10 43
+dk wipe 10 44
+dk wipe 10 50
+
+# check DK storage
+dk list
+dk st  
+    
+# 2. 
+# TLE upload 
+# Updated file "TLE.txt" needs to be in your home directory on 10.42.1.53. 
+# You can download it by following command, then upload it 
+# to 10.42.1.53 via FTP (e.g. Midnight Commander in linux): 
+# curl 'https://celestrak.org/NORAD/elements/gp.php?CATNR=60237&FORMAT=TLE' | tail -n2 > TLE.txt  
+vac pos tle TLE.txt
+vac pos fetch
+vac pos sat
+
+# 3. 
+# Define target and verify it is correctly set
+vac g ss 0
+vac g sq -- {q0},{q1},{q2},{q3} ECI {slot}
+vac g ss {slot}
+vac g gs
+vac g gt {slot}
+
+# 4. 
+# Disable pointing (we first need to spin down the satellite)
+per set tc_safe2obs 0
+per ls tc_safe2obs
+
+# 5.
+# schedule detumbling to begin 20 minutes before pointing for 1 hour
+# first we delete all current items from the minicron planner
+cli 14 "mcrr a"
+# following command will start detumbling ("upy run 4 -a1800") 20 minutes before pointing
+cli 14 "mcra {ts_detumbling} 1 1 {source} 10 26 33 0 TRX 00 04 08 07 00 00 00 00 00 00 00 00 00 00 00 00"
+
+# 6. 
+# schedule pointing to begin {dt_pointing} minutes before the image is taken
+# the pointing will last 40 minutes 
+# following command will execute "per set tc_safe2obs 1200" at the specified time
+cli 14 "mcra {ts_pointing} 1 1 {source} 10 19 34 0 TRX 01 74 63 5F 73 61 66 65 32 6F 62 73 00 00 00 00 00 00 00 00 00 00 00 00 01 B0 04 00 00"
+
+# 7.
+# following two commands will begin temperature measurement 
+# 5 min before the image for 10 min
+# the measurement will be saved in "dtsol6.b" file on node 6
+cli 14 "mcra {int(ts_img-605)} 1 1 {source} 6 8 35 0 TRX 00 1C 0C 98 6E 16 00 64 74 73 6F 6C 36 2E 62"
+cli 14 "mcra {int(ts_img-601)} 1 1 {source} 6 16 36 0 TRX 14 00 00 00 00 00 00 00 05 00 00 00 6F 00 78 00 00 8C C5 B8 00"
+
+# 8. 
+# LUVCam op:
+# following 5 commands will turn on LUVCam, take the image and turn off LUVCam
+cli 14 "mcra {int(ts_img-45)} 1 1 {source} 1 7 37 0 TRX 6C 75 76 63 61 6D 20 70 6F 77 65 72 20 66 70 67 61 20 6F 6E 00"
+cli 14 "mcra {int(ts_img-15)} 1 1 {source} 1 7 38 0 TRX 6C 75 76 63 61 6D 20 70 6F 77 65 72 20 73 65 6E 73 6F 72 20 6F 6E 00" 
+cli 14 "mcra {ts_img} 1 1 {source} 1 7 39 0 TRX {luvcam_expose_data}"
+cli 14 "mcra {int(ts_img+2*60)} 1 2 {source} 1 7 40 0 TRX 6C 75 76 63 61 6D 20 70 6F 77 65 72 20 73 65 6E 73 6F 72 20 6F 66 66 00"
+cli 14 "mcra {int(ts_img+3*60)} 1 2 {source} 1 7 41 0 TRX 6C 75 76 63 61 6D 20 70 6F 77 65 72 20 66 70 67 61 20 6F 66 66 00"
+
+# 9. 
+# check items saved in minicron scheduler
+# this is mainly for debuging in case something goes wrong
+# there should be 9 items
+cli 14 mcr
+
+# This is the end of the main operation.
+
+# After the image is taken, it is necessary to download following data:
+# - LUVCam image
+# - temperature measurement
+# - AOCS data
+
+# ALWAYS VERIFY THAT DATA IS DOWNLOADED BEFORE DELETING ANYTHING.
+
+# AOCS data can be downloaded by a robot. Check email for more info.
+
+# Temperature measurement takes 20 seconds to download, 
+# so it can be done during an interactive pass:
+grb address_offset 6
+grb getf 0 -u -i -1 -w 8 -p 200 dtsol6.b -n 100
+
+# Science LUVCam image (1000x1000 px) typically needs 8 passes to download.
+# The drops can be either started manually at the beginning of each pass,
+# or, more conveniently, they can be scheduled for later passes via minicron.
+# The exact minicron commands will be implemented in later version of this tool.
+# For now, you can get the minicron commands in the SatOp after you log to 10.42.1.53.
+# Before each "grb getf" command, change time to that of the pass when you want 
+# it to be downloaded. Each part should be downloaded during different pass.
+
+# part 1/8
+YYYY-MM-DD HH:MM:SS
+m grb getf 1 -u -i -1 -w 8 -p 200 {filename}.raw -f 0 -s 250112 -n 3000
+
+# part 2/8
+YYYY-MM-DD HH:MM:SS
+m grb getf 1 -u -i -1 -w 8 -p 200 {filename}.raw -f 250112 -s 250112 -n 3000
+
+# part 3/8
+YYYY-MM-DD HH:MM:SS
+m grb getf 1 -u -i -1 -w 8 -p 200 {filename}.raw -f 500224 -s 250112 -n 3000
+
+# part 4/8
+YYYY-MM-DD HH:MM:SS
+m grb getf 1 -u -i -1 -w 8 -p 200 {filename}.raw -f 750336 -s 250112 -n 3000
+
+# part 5/8
+YYYY-MM-DD HH:MM:SS
+m grb getf 1 -u -i -1 -w 8 -p 200 {filename}.raw -f 1000448 -s 250112 -n 3000
+
+# part 6/8
+YYYY-MM-DD HH:MM:SS
+m grb getf 1 -u -i -1 -w 8 -p 200 {filename}.raw -f 1250560 -s 250112 -n 3000
+
+# part 7/8
+YYYY-MM-DD HH:MM:SS
+m grb getf 1 -u -i -1 -w 8 -p 200 {filename}.raw -f 1500672 -s 250112 -n 3000
+
+# part 8/8
+YYYY-MM-DD HH:MM:SS
+m grb getf 1 -u -i -1 -w 8 -p 200 {filename}.raw -f 1750784 -s 249344 -n 3000
+
+
+# !IMPORTANT! In all output "cli 14 ..." commands for download of LUVCam images,
+# we need to manually change "7" to "1". 
+# Example:
+# We want to download part of 26d10a.raw file during pass which begins 
+# at 2026-04-11 17:06:00 UTC. Copy following two lines to SatOp:
+
+2026-04-11 17:06:00
+m grb getf 1 -u -i -1 -w 8 -p 200 26d10a.raw -f 0 -s 250112 -n 3000
+
+# You will get following output:
+
+Timestamp: 1775927160
+
+# CSP [PACKET] OUT: S 28, D 7, Dp 16, Sp 59, Pr 2, Fl 0x00, Sz 41 VIA: LOOP (7) data: 18 31 C7 67 28 FF F8 00 0C 00 00 00 C8 00 00 00 00 00 00 00 00 00 03 D1 00 80 00 0B B8 32 36 64 31 30 61 2E 72 61 77 00 2D
+cli 14 "mcra 1775927160 1 1 28 7 16 59 0 TRX 18 31 C7 67 28 FF F8 00 0C 00 00 00 C8 00 00 00 00 00 00 00 00 00 03 D1 00 80 00 0B B8 32 36 64 31 30 61 2E 72 61 77 00 2D"
+# Regex: Cron|OK|Error
+
+# The "cli 14 ..." command is what we need. However, we need to change
+# the number 7 between "28" and "16" to 1. Thus the command that we send 
+# to the satellite will be:
+
+cli 14 "mcra 1775927160 1 1 28 1 16 59 0 TRX 18 31 C7 67 28 FF F8 00 0C 00 00 00 C8 00 00 00 00 00 00 00 00 00 03 D1 00 80 00 0B B8 32 36 64 31 30 61 2E 72 61 77 00 2D"
+
+# After all files are successfully downloaded, we delete them:
+cli 1 "rm {filename}.raw"
+grb sh 0 rm dtsol6.b
+
+
+# This is the end of the full operation plan. Thank you for your service!
+"""
+
+    with open(f"{output_fn}.txt", "w") as file:
+        file.write(op_plan)
+
+
+
+
+
+def create_op_plan_calibration_img(img_time_utc,img_filename,img_exp,output_fn="op_plan"):
+    '''
+    This function creates an operation plan for LUVCam only operation. It is useful for calibration and images in SAA.
+
+    required arguments:
+    - img_time_utc: UTC time when the image should be taken, e.g. 2026-04-22 20:35:00 
+    - img_filename: name of the luvcam image, e.g. 26d22a
+    - img_exp: required exposure in miliseconds, e.g. 1000 (= 1s)
+
+    optional arguments:
+    - output_fn: name of the output txt file, by default "op_plan.txt"
+
+    output:
+    - .txt file with the operation plan to be executed
+    '''
+
+    # define source node for mcr commands
+    source = 28
+
+
+    # define img size and sensor coords
+    img_x_offset=1808
+    img_y_offset=1119
+    img_xs=512
+    img_ys=512
+
+    # timestamp of luvcam image and others
+    dt = datetime.strptime(img_time_utc, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+    ts_img = int(dt.timestamp())
+
+    # create "data" part from mcr command from the input parameters
+    luvcam_expose_data = _get_luvcam_expose_data(img_filename,img_exp,img_x_offset,img_y_offset,img_xs,img_ys)
+
+    # img filename format for drops
+    filename = img_filename.split('.')[0]
+
+
+    op_plan = f"""# This is an operation plan for LUVCam image
+# of the non-illuminated part of CMOS at {img_time_utc} UTC
+# with an exposure of {img_exp/1000} seconds.
+
+# MAKE SURE THE TIME IS LATER THAN THE PASS WHEN YOU EXECUTE THE COMMANDS.
+
+# Below follows a list of commands to be executed (for now manually by an operator).
+# The commands should be executed in this order.
+
+
+# 1.
+# Schedule temperature measurement 5 min before the image for 10 min.
+# The measurement will be saved in "dtsol6.b" file on node 6.
+cli 14 "mcra {int(ts_img-605)} 1 1 {source} 6 8 35 0 TRX 00 1C 0C 98 6E 16 00 64 74 73 6F 6C 36 2E 62"
+cli 14 "mcra {int(ts_img-601)} 1 1 {source} 6 16 36 0 TRX 14 00 00 00 00 00 00 00 05 00 00 00 6F 00 78 00 00 8C C5 B8 00"
+
+# 2. 
+# LUVCam op:
+# following 5 commands will turn on LUVCam, take the image and turn off LUVCam
+cli 14 "mcra {int(ts_img-45)} 1 1 {source} 1 7 37 0 TRX 6C 75 76 63 61 6D 20 70 6F 77 65 72 20 66 70 67 61 20 6F 6E 00"
+cli 14 "mcra {int(ts_img-15)} 1 1 {source} 1 7 38 0 TRX 6C 75 76 63 61 6D 20 70 6F 77 65 72 20 73 65 6E 73 6F 72 20 6F 6E 00" 
+cli 14 "mcra {ts_img} 1 1 {source} 1 7 39 0 TRX {luvcam_expose_data}"
+cli 14 "mcra {int(ts_img+2*60)} 1 2 {source} 1 7 40 0 TRX 6C 75 76 63 61 6D 20 70 6F 77 65 72 20 73 65 6E 73 6F 72 20 6F 66 66 00"
+cli 14 "mcra {int(ts_img+3*60)} 1 2 {source} 1 7 41 0 TRX 6C 75 76 63 61 6D 20 70 6F 77 65 72 20 66 70 67 61 20 6F 66 66 00"
+
+# 3. 
+# check items saved in minicron scheduler
+# this is mainly for debuging in case something goes wrong
+# there should be 7 items
+cli 14 mcr
+
+# This is the end of the main operation.
+
+# After the image is taken, it is necessary to download following data:
+# - LUVCam image
+# - temperature measurement
+
+# ALWAYS VERIFY THAT DATA IS DOWNLOADED BEFORE DELETING ANYTHING.
+
+# Temperature measurement takes 20 seconds to download, 
+# so it can be done during an interactive pass:
+grb address_offset 6
+grb getf 0 -u -i -1 -w 8 -p 200 dtsol6.b -n 100
+
+# Calibration LUVCam image (512x512 px) typically needs 2 passes to download.
+# The drops can be either started manually at the beginning of each pass,
+# or, more conveniently, they can be scheduled for later passes via minicron.
+# The exact minicron commands will be implemented in later version of this tool.
+# For now, you can get the minicron commands in the SatOp after you log to 10.42.1.53.
+# Before each "grb getf" command, change time to that of the pass when you want 
+# it to be downloaded. Each part should be downloaded during different pass.
+
+# part 1/2
+YYYY-MM-DD HH:MM:SS
+m grb getf 1 -u -i -1 -w 8 -p 200 {filename}.raw -f 0 -s 262144 -n 3000
+
+# part 2/2
+YYYY-MM-DD HH:MM:SS
+m grb getf 1 -u -i -1 -w 8 -p 200 {filename}.raw -f 262144 -s 262272 -n 3000
+
+
+# !IMPORTANT! In all output "cli 14 ..." commands for download of LUVCam images,
+# we need to manually change "7" to "1". 
+# Example:
+# We want to download part of 26d10a.raw file during pass which begins 
+# at 2026-04-11 17:06:00 UTC. Copy following two lines to SatOp:
+
+2026-04-11 17:06:00
+m grb getf 1 -u -i -1 -w 8 -p 200 26d10a.raw -f 0 -s 250112 -n 3000
+
+# You will get following output:
+
+Timestamp: 1775927160
+
+# CSP [PACKET] OUT: S 28, D 7, Dp 16, Sp 59, Pr 2, Fl 0x00, Sz 41 VIA: LOOP (7) data: 18 31 C7 67 28 FF F8 00 0C 00 00 00 C8 00 00 00 00 00 00 00 00 00 03 D1 00 80 00 0B B8 32 36 64 31 30 61 2E 72 61 77 00 2D
+cli 14 "mcra 1775927160 1 1 28 7 16 59 0 TRX 18 31 C7 67 28 FF F8 00 0C 00 00 00 C8 00 00 00 00 00 00 00 00 00 03 D1 00 80 00 0B B8 32 36 64 31 30 61 2E 72 61 77 00 2D"
+# Regex: Cron|OK|Error
+
+# The "cli 14 ..." command is what we need. However, we need to change
+# the number 7 between "28" and "16" to 1. Thus the command that we send 
+# to the satellite will be:
+
+cli 14 "mcra 1775927160 1 1 28 1 16 59 0 TRX 18 31 C7 67 28 FF F8 00 0C 00 00 00 C8 00 00 00 00 00 00 00 00 00 03 D1 00 80 00 0B B8 32 36 64 31 30 61 2E 72 61 77 00 2D"
+
+# After all files are successfully downloaded, we delete them:
+cli 1 "rm {filename}.raw"
+grb sh 0 rm dtsol6.b
+
+
+# This is the end of the full operation plan. Thank you for your service!
+"""
+
+    with open(f"{output_fn}.txt", "w") as file:
+        file.write(op_plan)
+
+
+
+
+
+

@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: luvcam
-Version: 0.1.dev18+g158531be7.d20251205
+Version: 0.1.dev26+g6f0990bba.d20260423
 Summary: Operations planning for LUVCam1 and LUVCam2
 Author-email: Emily Hu <emilyhu21030@gmail.com>
 License-Expression: MIT
@@ -26,7 +26,7 @@ LUVCam is a package for planning science passes on LUVCam1 and 2. It relies on `
 <https://rhodesmill.org/pyephem/>`_.
 
 For installation and usage instructions, please see the `online documentation
-<https://baseband.readthedocs.io/>`_.
+<https://luvcam.readthedocs.io/en/latest/index.html>`_.
 
 License
 -------
