@@ -40,3 +40,7 @@ def test_dms_to_deg():
     deg = dms_to_deg(41,9,23.8)
     assert(deg == pytest.approx(41.1566111))
 
+def test_dms_to_deg():
+    deg = dms_to_deg(-41,9,23.8)
+    assert(deg == pytest.approx(-41.1566111))
+
