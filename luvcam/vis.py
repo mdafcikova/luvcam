@@ -196,7 +196,7 @@ def dms_to_deg(d,m,s):
     deg : float
         Value of input Dec in degrees.
     """
-    deg = (d+m/60+s/3600)
+    deg = np.sign(d)*(abs(d)+m/60+s/3600)
     return deg
 
 def ra_dec_to_quaternion(ra_deg, dec_deg):
