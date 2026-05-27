@@ -71,7 +71,7 @@ def _get_luvcam_expose_data(img_filename,img_exp,img_x_offset,img_y_offset,img_x
 
 def create_op_plan_science_img(img_time_utc,target_ra,target_dec,
                                img_filename,img_exp,
-                               dt_pointing=20,target_name=None,
+                               dt_pointing=20,target_name=None,flush_img_filename='noise',
                                output_fn='op_plan'):
     '''
     This function creates an operation plan for AOCS+LUVCam operation.
@@ -90,6 +90,7 @@ def create_op_plan_science_img(img_time_utc,target_ra,target_dec,
     optional arguments:
     - dt_pointing: how many minutes before the image is taken should pointing begin (default: 20 min)
     - target_name: this is just for your information and clarity, e.g. Pleiades
+    - flush_img_filename: name of the flush image (default: noise)
     - output_fn: name of the output txt file, by default "op_plan.txt"
 
     output:
@@ -141,6 +142,9 @@ def create_op_plan_science_img(img_time_utc,target_ra,target_dec,
     # create "data" part from mcr command from the input parameters
     luvcam_expose_data = _get_luvcam_expose_data(img_filename,img_exp,img_x_offset,img_y_offset,img_xs,img_ys)
 
+    # create "data" part from mcr command for flush img
+    flush_luvcam_expose_data = _get_luvcam_expose_data(flush_img_filename,img_exp=10,img_x_offset=1548,img_y_offset=2846,img_xs=256,img_ys=256)
+
     # how many seconds before the real image should the flush img be taken 
     dt_flush = 4*60
     # if flush img op will end after the real img begins, raise error
@@ -149,6 +153,9 @@ def create_op_plan_science_img(img_time_utc,target_ra,target_dec,
     # if temp measurement begins later than the flush img, raise error
     if int(ts_img-301) > int(ts_img-dt_flush-45):
         raise ValueError("Temperature measurement begins later than the flush image, decrease dt for flush image.")
+
+    # img filename format for drops
+    flush_img_filename = flush_img_filename.split('.')[0]
 
     # img filename format for drops
     filename = img_filename.split('.')[0]
@@ -239,7 +246,7 @@ cli 14 "mcra {int(ts_img-301)} 1 1 {source} 6 16 36 0 TRX 14 00 00 00 00 00 00 0
 # (256x256px, 10ms exposure, just to read out noise, this won't be downloaded)
 cli 14 "mcra {int(ts_img-dt_flush-45)} 1 1 {source} 1 7 37 0 TRX 6C 75 76 63 61 6D 20 70 6F 77 65 72 20 66 70 67 61 20 6F 6E 00"
 cli 14 "mcra {int(ts_img-dt_flush-15)} 1 1 {source} 1 7 38 0 TRX 6C 75 76 63 61 6D 20 70 6F 77 65 72 20 73 65 6E 73 6F 72 20 6F 6E 00" 
-cli 14 "mcra {ts_img-dt_flush} 1 1 {source} 1 7 39 0 TRX 6C 75 76 63 61 6D 20 65 78 70 6F 73 65 20 6E 6F 69 73 65 2E 72 61 77 20 31 30 20 30 20 31 35 34 38 20 32 38 34 36 20 32 35 36 20 32 35 36 00"
+cli 14 "mcra {ts_img-dt_flush} 1 1 {source} 1 7 39 0 TRX {flush_luvcam_expose_data}"
 cli 14 "mcra {int(ts_img-dt_flush+60)} 1 2 {source} 1 7 40 0 TRX 6C 75 76 63 61 6D 20 70 6F 77 65 72 20 73 65 6E 73 6F 72 20 6F 66 66 00"
 cli 14 "mcra {int(ts_img-dt_flush+2*60)} 1 2 {source} 1 7 41 0 TRX 6C 75 76 63 61 6D 20 70 6F 77 65 72 20 66 70 67 61 20 6F 66 66 00"
 
@@ -331,13 +338,19 @@ cli 14 "mcra 1775927160 1 1 28 7 16 59 0 TRX 18 31 C7 67 28 FF F8 00 0C 00 00 00
 # Regex: Cron|OK|Error
 
 # The "cli 14 ..." command is what we need. However, we need to change
-# the number 7 between "28" and "16" to 1. Thus the command that we send 
-# to the satellite will be:
+# the number 7 between "28" and "16" to 1. Thus the (only) command that 
+# we send to the satellite will be:
 
 cli 14 "mcra 1775927160 1 1 28 1 16 59 0 TRX 18 31 C7 67 28 FF F8 00 0C 00 00 00 C8 00 00 00 00 00 00 00 00 00 03 D1 00 80 00 0B B8 32 36 64 31 30 61 2E 72 61 77 00 2D"
 
+# Typically, it is not necessary to download the flush image.
+# However, in case we need it, here is the command for download:
+
+YYYY-MM-DD HH:MM:SS
+m grb getf 1 -u -i -1 -w 8 -p 200 {flush_img_filename}.raw -n 1500
+
 # After all files are successfully downloaded, we delete them:
-cli 1 "rm {filename}.raw noise.raw"
+cli 1 "rm {filename}.raw {flush_img_filename}.raw"
 grb sh 0 rm dtsol6.b
 
 
