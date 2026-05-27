@@ -249,7 +249,7 @@ cli 14 "mcra {int(ts_img+3*60)} 1 2 {source} 1 7 41 0 TRX 6C 75 76 63 61 6D 20 7
 # 9. 
 # check items saved in minicron scheduler
 # this is mainly for debuging in case something goes wrong
-# there should be 9 items
+# there should be 14 items
 cli 14 mcr
 
 # This is the end of the main operation.
