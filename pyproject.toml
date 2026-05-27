@@ -13,7 +13,9 @@ authors = [
 dependencies = [
   "numpy",
   "ephem",
-  "scipy"
+  "scipy",
+  "datetime",
+  "re"
 ]
 description = "Operations planning for LUVCam1 and LUVCam2"
 dynamic = ["version"]
@@ -31,6 +33,10 @@ docs = [
     "sphinx",
     "sphinx-automodapi",
     "numpydoc",
+]
+test = [
+    "pytest",
+    "pytest-cov",
 ]
 
 [project.urls]
