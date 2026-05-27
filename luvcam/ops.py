@@ -172,6 +172,10 @@ def create_op_plan_science_img(img_time_utc,target_ra,target_dec,
 # Below follows a list of commands to be executed (for now manually by an operator).
 # The commands should be executed in this order.
 
+# Check housekeeping data, expecially that PSU channels are on and 
+# battery voltage is not low (e.g. <7.95V)
+psu hk
+
 # 1. 
 # Wipe datakeeper (DK) = AOCS data
 # Make sure previous data were downloaded or are not needed.
