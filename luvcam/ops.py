@@ -141,6 +141,15 @@ def create_op_plan_science_img(img_time_utc,target_ra,target_dec,
     # create "data" part from mcr command from the input parameters
     luvcam_expose_data = _get_luvcam_expose_data(img_filename,img_exp,img_x_offset,img_y_offset,img_xs,img_ys)
 
+    # how many seconds before the real image should the flush img be taken 
+    dt_flush = 4*60
+    # if flush img op will end after the real img begins, raise error
+    if int(ts_img-dt_flush+2*60) > int(ts_img-45):
+        raise ValueError("Flush image is too close to the real image, increase dt for flush image.")
+    # if temp measurement begins later than the flush img, raise error
+    if int(ts_img-301) > int(ts_img-dt_flush-45):
+        raise ValueError("Temperature measurement begins later than the flush image, decrease dt for flush image.")
+
     # img filename format for drops
     filename = img_filename.split('.')[0]
 
@@ -217,11 +226,19 @@ cli 14 "mcra {ts_pointing} 1 1 {source} 10 19 34 0 TRX 01 74 63 5F 73 61 66 65 3
 # following two commands will begin temperature measurement 
 # 5 min before the image for 10 min
 # the measurement will be saved in "dtsol6.b" file on node 6
-cli 14 "mcra {int(ts_img-605)} 1 1 {source} 6 8 35 0 TRX 00 1C 0C 98 6E 16 00 64 74 73 6F 6C 36 2E 62"
-cli 14 "mcra {int(ts_img-601)} 1 1 {source} 6 16 36 0 TRX 14 00 00 00 00 00 00 00 05 00 00 00 6F 00 78 00 00 8C C5 B8 00"
+cli 14 "mcra {int(ts_img-305)} 1 1 {source} 6 8 35 0 TRX 00 1C 0C 98 6E 16 00 64 74 73 6F 6C 36 2E 62"
+cli 14 "mcra {int(ts_img-301)} 1 1 {source} 6 16 36 0 TRX 14 00 00 00 00 00 00 00 05 00 00 00 6F 00 78 00 00 8C C5 B8 00"
 
 # 8. 
 # LUVCam op:
+# following 5 commands will take the flush image XX min before the real image
+# (256x256px, 10ms exposure, just to read out noise, this won't be downloaded)
+cli 14 "mcra {int(ts_img-dt_flush-45)} 1 1 {source} 1 7 37 0 TRX 6C 75 76 63 61 6D 20 70 6F 77 65 72 20 66 70 67 61 20 6F 6E 00"
+cli 14 "mcra {int(ts_img-dt_flush-15)} 1 1 {source} 1 7 38 0 TRX 6C 75 76 63 61 6D 20 70 6F 77 65 72 20 73 65 6E 73 6F 72 20 6F 6E 00" 
+cli 14 "mcra {ts_img-dt_flush} 1 1 {source} 1 7 39 0 TRX 6C 75 76 63 61 6D 20 65 78 70 6F 73 65 20 6E 6F 69 73 65 2E 72 61 77 20 31 30 20 30 20 31 35 34 38 20 32 38 34 36 20 32 35 36 20 32 35 36 00"
+cli 14 "mcra {int(ts_img-dt_flush+60)} 1 2 {source} 1 7 40 0 TRX 6C 75 76 63 61 6D 20 70 6F 77 65 72 20 73 65 6E 73 6F 72 20 6F 66 66 00"
+cli 14 "mcra {int(ts_img-dt_flush+2*60)} 1 2 {source} 1 7 41 0 TRX 6C 75 76 63 61 6D 20 70 6F 77 65 72 20 66 70 67 61 20 6F 66 66 00"
+
 # following 5 commands will turn on LUVCam, take the image and turn off LUVCam
 cli 14 "mcra {int(ts_img-45)} 1 1 {source} 1 7 37 0 TRX 6C 75 76 63 61 6D 20 70 6F 77 65 72 20 66 70 67 61 20 6F 6E 00"
 cli 14 "mcra {int(ts_img-15)} 1 1 {source} 1 7 38 0 TRX 6C 75 76 63 61 6D 20 70 6F 77 65 72 20 73 65 6E 73 6F 72 20 6F 6E 00" 
@@ -316,7 +333,7 @@ cli 14 "mcra 1775927160 1 1 28 7 16 59 0 TRX 18 31 C7 67 28 FF F8 00 0C 00 00 00
 cli 14 "mcra 1775927160 1 1 28 1 16 59 0 TRX 18 31 C7 67 28 FF F8 00 0C 00 00 00 C8 00 00 00 00 00 00 00 00 00 03 D1 00 80 00 0B B8 32 36 64 31 30 61 2E 72 61 77 00 2D"
 
 # After all files are successfully downloaded, we delete them:
-cli 1 "rm {filename}.raw"
+cli 1 "rm {filename}.raw noise.raw"
 grb sh 0 rm dtsol6.b
 
 
@@ -461,9 +478,5 @@ grb sh 0 rm dtsol6.b
 
     with open(f"{output_fn}.txt", "w") as file:
         file.write(op_plan)
-
-
-
-
 
 
